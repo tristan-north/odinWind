@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+printf :: fmt.printf
 import "core:runtime"
 import "core:strings"
 import "vendor:glfw"
@@ -9,11 +10,11 @@ import gl "vendor:OpenGL"
 GL_MAJOR_VERSION :: 4
 GL_MINOR_VERSION :: 0
 
-State :: struct {
-	window: glfw.WindowHandle,
+Global :: struct {
+	window: ^Window,
 	vao: u32,
 }
-state: State
+global: Global
 
 error_callback :: proc "c" (errcode: i32, desc: cstring) {
 	context = runtime.default_context()
@@ -28,16 +29,22 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
 
 framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width: i32, height: i32) {
 	context = runtime.default_context()
+	
 	gl.Viewport(0, 0, width, height)
+	
+	global.window.bounds = Rect{l=0, t=0, r=int(width), b=int(height)}
+	global.window.clip = global.window.bounds
+	widget_message(global.window, .Layout, 0, nil)
+	
 	draw()
 }
 
 draw :: proc() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	gl.BindVertexArray(state.vao)
+	gl.BindVertexArray(global.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
-	glfw.SwapBuffers(state.window)
+	glfw.SwapBuffers(global.window.window_handle)
 }
 
 main :: proc() {
@@ -46,20 +53,18 @@ main :: proc() {
 	if glfw.Init() == 0 do panic("EXIT_FAILURE")
 	defer glfw.Terminate()
 
-	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, GL_MAJOR_VERSION)
-	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, GL_MINOR_VERSION)
-
-	state.window = glfw.CreateWindow(640, 480, "Simple example", nil, nil)
-	if state.window == nil do panic("EXIT_FAILURE")
-	defer glfw.DestroyWindow(state.window)
+	// ver := gl.GetString(gl.VERSION)
+	// printf("GL Version: %v\n", ver)
+	window := window_create()
+	global.window = window
+	defer glfw.DestroyWindow(global.window.window_handle)
 
 	// glfw.SwapInterval(1) // Enable Vsync
 	
-	glfw.SetKeyCallback(state.window, key_callback)
-	glfw.SetFramebufferSizeCallback(state.window, framebuffer_size_callback);
+	glfw.SetKeyCallback(window.window_handle, key_callback)
+	glfw.SetFramebufferSizeCallback(window.window_handle, framebuffer_size_callback);
 
-	glfw.MakeContextCurrent(state.window)
+	glfw.MakeContextCurrent(window.window_handle)
 	
 	gl.load_up_to(GL_MAJOR_VERSION, GL_MINOR_VERSION, glfw.gl_set_proc_address) 
 	
@@ -68,9 +73,13 @@ main :: proc() {
     program := create_shader_program()
     gl.UseProgram(program);
 
-    state.vao = setup_vao();
+    global.vao = setup_vao();
+
+	// UI Testing
+	widget1 := widget_create(Widget, window, 0, nil)
+	// widget2 := widget_create(widget1, 0)
 	
-	for !glfw.WindowShouldClose(state.window) {
+	for !glfw.WindowShouldClose(window.window_handle) {
 		glfw.WaitEvents()
 
 		draw()
