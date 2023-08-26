@@ -93,10 +93,34 @@ widget_move :: proc(widget: ^Widget, bounds: Rect, alwaysLayout := false) {
 	}
 }
 
+widget_repaint :: proc(widget: ^Widget, region: ^Rect) {
+	region := region
+	if region == nil {
+		// If the region to repaint was not specified, use the whole bounds of the widget.
+		region = &widget.bounds
+	}
+
+	// Intersect the region to repaint with the widget's clip.
+	r := rect_intersection(region^, widget.clip)
+
+	// If the intersection is non-empty...
+	if rect_valid(r) {
+		// Set the window's updateRegion to be the smallest rectangle containing both
+		// the previous value of the updateRegion and the new rectangle we need to repaint.
+		if rect_valid(widget.window.update_region) {
+			widget.window.update_region = rect_bounding(widget.window.update_region, r)
+		} else {
+			widget.window.update_region = r;
+		}
+	}
+}
+
 Window :: struct {
 	using widget: Widget,
 	window_handle: glfw.WindowHandle,
 	width, height: int,
+	update_region: Rect,
+	bits: []u32,
 }
 
 window_create :: proc () -> ^Window {
@@ -116,13 +140,66 @@ window_create :: proc () -> ^Window {
 	return window
 }
 
+// Recusively sends the Paint message to the widget and its children.
+@(private="file")
+_widget_paint :: proc(widget: ^Widget, painter: ^Painter) {
+	// Compute the intersection of where the element is allowed to draw, widget->clip,
+	// with the area requested to be drawn, painter->clip.
+	clip := rect_intersection(widget.clip, painter.clip)
+
+	// If the above regions do not overlap, return here,
+	// and do not recurse into our descendant elements
+	// (since their clip rectangles are contained within widget->clip).
+	if rect_valid(clip) == false do return 
+
+	// Set the painter's clip and ask the widget to paint itself.
+	painter.clip = clip
+	widget_message(widget, .Paint, 0, painter)
+
+	// Recurse into each child, restoring the clip each time.
+	for child in widget.children {
+		painter.clip = clip
+		_widget_paint(child, painter)
+	}
+}
+
+// Sets up a Painter and calls _widget_paint on the window with update_region as the clip rect.
+@(private="file")
+_update :: proc() {
+	window := global.window
+
+	// Is there anything marked for repaint?
+	if rect_valid(window.update_region) {
+		// Setup the painter using the window's buffer.
+		painter: Painter
+		painter.bits = window.bits
+		painter.width = window.width;
+		painter.height = window.height;
+		painter.clip = rect_intersection(Rect{0, window.width, 0, window.height}, window.update_region)
+
+		// Paint everything in the update region.
+		_widget_paint(&window.widget, &painter);
+
+		// Tell the platform layer to put the result onto the screen.
+		_window_end_paint(window, &painter);
+
+		// Clear the update region, ready for the next input event cycle.
+		window.update_region = Rect{0, 0, 0, 0}
+	}
+}
+
+@(private="file")
+_window_end_paint :: proc(window: ^Window, painter: ^Painter) {
+	printf("_window_paint_end\n");
+}
+
 
 //////////////////////////////////////
 //  Helper functions
 //////////////////////////////////////
 
 // Returns true if the rectangle is 'valid', which I define to mean it has positive width and height.
-rect_vaid :: proc(rect: Rect) -> bool {
+rect_valid :: proc(rect: Rect) -> bool {
 	return rect.r > rect.l && rect.b > rect.t
 }
 

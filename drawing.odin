@@ -11,11 +11,11 @@ draw_block :: proc(painter: ^Painter, rect: Rect, color: u32) {
 	rect_clipped := rect_intersection(painter.clip, rect)
 
 	// For every pixel inside the rectangle...
-	for y in rect_clipped.t..<rect_clipped.b {
-		for x in rect_clipped.l..<rect_clipped.r {
-			// Set the pixel to the given color.
-			painter.bits[y * painter.width + x] = color
-		}
-	}
+	// for y in rect_clipped.t..<rect_clipped.b {
+	// 	for x in rect_clipped.l..<rect_clipped.r {
+	// 		// Set the pixel to the given color.
+	// 		painter.bits[y * painter.width + x] = color
+	// 	}
+	// }
 }
 

@@ -7,6 +7,8 @@ import "core:strings"
 import "vendor:glfw"
 import gl "vendor:OpenGL"
 
+// https://nakst.gitlab.io/tutorial/ui-part-1.html
+
 GL_MAJOR_VERSION :: 4
 GL_MINOR_VERSION :: 0
 
@@ -132,20 +134,38 @@ create_shader_program :: proc() -> u32 {
 ///////////////////////////////////////////////
 widgetB: ^Widget
 
-central_widget_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) {
+central_widget_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
 	bounds := widget.bounds
 
-	if message == .Paint {
+	switch message {
+	case .Paint:
 		draw_block((^Painter)(dp), bounds, 0xFF77FF)
-	} else if message == .Layout {
+	case .Layout:
 		printf("layout A with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b)
-		widget_move(widgetB, Rect(bounds.l + 20, bounds.r - 20, bounds.t + 20, bounds.b - 20), false);
+		widget_move(widgetB, Rect{bounds.l + 20, bounds.r - 20, bounds.t + 20, bounds.b - 20})
+	case .User: printf("User message\n")
 	}
 
-	return 0;
+	return 0
 }
+
+widgetB_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
+	bounds := widget.bounds
+
+	switch message {
+	case .Paint:
+		draw_block((^Painter)(dp), bounds, 0xDDDDE0)
+	case .Layout:
+		printf("layout B with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b);
+		// ElementMove(elementC, RectangleMake(bounds.l - 40, bounds.l + 40, bounds.t + 40, bounds.b - 40), false);
+		// ElementMove(elementD, RectangleMake(bounds.r - 40, bounds.r + 40, bounds.t + 40, bounds.b - 40), false);
+	case .User: printf("User message\n")
+	}
+
+	return 0
+}
+
 setup_UI :: proc() {
-	// UI Testing
-	central_widget := widget_create(Widget, global.window, 0, nil)
-	widget2 := widget_create(central_widget, 0)
+	central_widget := widget_create(Widget, global.window, 0, central_widget_message)
+	widgetB = widget_create(Widget, central_widget, 0, widgetB_message)
 }
