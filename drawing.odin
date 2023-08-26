@@ -6,7 +6,7 @@ Painter :: struct {
 	width, height: 	int // The width and height of the bitmap.
 }
 
-
+@(private="file")
 draw_block :: proc(painter: ^Painter, rect: Rect, color: u32) {
 	// Intersect the rectangle we want to fill with the clip, i.e. the rectangle we're allowed to draw into.
 	rect_clipped := rect_intersection(painter.clip, rect)

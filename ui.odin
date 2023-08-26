@@ -11,6 +11,7 @@ Rect :: struct { l, r, t, b: int }
 Message :: enum {
 	User,
 	Layout, // To be sent when a widget has had its size or position changed.
+	Paint,
 }
 
 //////////////////////////////////////
@@ -19,7 +20,8 @@ Message :: enum {
 
 MessageHandler :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int
 
-window_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
+@(private="file")
+_window_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
 
 	// Window should only have one child widget.
 	if message == .Layout && len(widget.children) > 0 {
@@ -98,7 +100,7 @@ Window :: struct {
 }
 
 window_create :: proc () -> ^Window {
-	window := widget_create(Window, nil, 0, window_message)
+	window := widget_create(Window, nil, 0, _window_message)
 	
 	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, GL_MAJOR_VERSION)
@@ -155,3 +157,19 @@ rect_equals :: proc(a, b: Rect) -> bool {
 rect_contains :: proc(rect: Rect, x, y: int) -> bool {
 	return rect.l <= x && rect.r > x && rect.t <= y && rect.b > y
 }
+
+// ----------- Painting Process Overview -----------
+// As events are processed and widgets are flagged as needing to repaint, rather than doing the repainting immediately, which might cause areas to be repainted multiple times in response to one chunk of event processing, an updateRegion is expanded and then at the end of the event processing the _Update function sends Paint messages to all the widgets which need to be repainted. The widgets then handle the paint messages and call functions to color the pixels. 
+
+// Window only ever has one child with the same width and height as the window.
+
+
+// MyElementMessage() The message handler function for each widget type which handles the new Paint message.
+
+// _ElementPaint() Recurses through child widgets sending them Paint messages
+
+// Rectangle updateRegion; Need to add to Window struct
+
+// ElementRepaint() Called by library user, just sets the updateRegion on Window
+
+// _Update() Gets called at the end of every "frame" (so far just when we get a window resize callback from the OS) and calls _ElementPaint() on the Window with the updateRegion.
