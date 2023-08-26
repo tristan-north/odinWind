@@ -41,7 +41,7 @@ Widget :: struct {
 	children: 		[dynamic]^Widget, // An array of pointers to the child Widgets.
 	bounds:			Rect,
 	clip:			Rect, // The subrectangle of the widget's bounds that is actually visible and interactable.	
-	window: 		glfw.WindowHandle, // The window at the root of the hierarchy.
+	window: 		^Window, // The window at the root of the hierarchy.
 	message_class:	MessageHandler,
 	message_user:	MessageHandler,
 	cp:				rawptr,
@@ -101,6 +101,8 @@ Window :: struct {
 
 window_create :: proc () -> ^Window {
 	window := widget_create(Window, nil, 0, _window_message)
+
+	window.window = window // Set the window field on the widget to be the new window
 	
 	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, GL_MAJOR_VERSION)

@@ -75,10 +75,8 @@ main :: proc() {
 
     global.vao = setup_vao();
 
-	// UI Testing
-	widget1 := widget_create(Widget, window, 0, nil)
-	// widget2 := widget_create(widget1, 0)
-	
+	setup_UI()
+
 	for !glfw.WindowShouldClose(window.window_handle) {
 		glfw.WaitEvents()
 
@@ -128,3 +126,26 @@ create_shader_program :: proc() -> u32 {
     return shader_program;
 }
 
+
+///////////////////////////////////////////////
+// UI Testing
+///////////////////////////////////////////////
+widgetB: ^Widget
+
+central_widget_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) {
+	bounds := widget.bounds
+
+	if message == .Paint {
+		draw_block((^Painter)(dp), bounds, 0xFF77FF)
+	} else if message == .Layout {
+		printf("layout A with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b)
+		widget_move(widgetB, Rect(bounds.l + 20, bounds.r - 20, bounds.t + 20, bounds.b - 20), false);
+	}
+
+	return 0;
+}
+setup_UI :: proc() {
+	// UI Testing
+	central_widget := widget_create(Widget, global.window, 0, nil)
+	widget2 := widget_create(central_widget, 0)
+}
