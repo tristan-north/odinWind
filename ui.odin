@@ -192,6 +192,7 @@ _update :: proc() {
 @(private="file")
 _window_end_paint :: proc(window: ^Window, painter: ^Painter) {
 	// printf("_window_paint_end\n");
+	glfw.SwapBuffers(global.window.window_handle)
 }
 
 

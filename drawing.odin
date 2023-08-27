@@ -8,31 +8,28 @@ Painter :: struct {
 }
 
 draw_block :: proc(painter: ^Painter, rect: Rect, color: u32) {
-	color := color
-	
 	// Intersect the rectangle we want to fill with the clip, i.e. the rectangle we're allowed to draw into.
 	rect_clipped := rect_intersection(painter.clip, rect)
 
-	bounds := [4]f32{0, 0.5, 0.9, 0}
+	bounds := [4]f32{-0.5, 0.5, 0.9, 0}
 	gl.Uniform4fv(0, 1, &bounds[0])	
 	
-	r := transmute(^u8)&color
-	rFloat := f32(r^)
+	asbytes := transmute([4]u8)color
+	colorFloat: [4]f32
+	colorFloat.r = (cast(f32)asbytes[3]) / 255.0	
+	colorFloat.g = (cast(f32)asbytes[2]) / 255.0	
+	colorFloat.b = (cast(f32)asbytes[1]) / 255.0	
+	colorFloat.a = (cast(f32)asbytes[0]) / 255.0	
 	
-	colorFloat := [4]f32{rFloat, 0, 0, 1}
 	gl.Uniform4fv(1, 1, &colorFloat[0])	
 	
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
-	// printf("Painting rect: %v\n", rect)
-
-	// For every pixel inside the rectangle...
-	// for y in rect_clipped.t..<rect_clipped.b {
-	// 	for x in rect_clipped.l..<rect_clipped.r {
-	// 		// Set the pixel to the given color.
-	// 		painter.bits[y * painter.width + x] = color
-	// 	}
-	// }
 }
 
-// Doing currently
-// Need to actually do the drawing with the UI library and draw_block, then get the color conversion from u32 to [4]f32 working.
+rect_to_ndc :: proc(rect: Rect, asNDC: ^[4]f32) {
+	asNDC[0] = (f32(rect.l) / f32(global.window.width) - 0.5) * 2.0
+	asNDC[1] = (f32(rect.t) / f32(global.window.height) - 0.5) * 2.0
+	asNDC[2] = (f32(rect.r) / f32(global.window.width) - 0.5) * 2.0
+	asNDC[3] = (f32(rect.b) / f32(global.window.height) - 0.5) * 2.0
+}
+

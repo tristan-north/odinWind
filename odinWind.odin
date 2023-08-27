@@ -39,9 +39,10 @@ framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width: i32, he
 	widget_message(global.window, .Layout, 0, nil)
 	_update()
 	
-	draw()
+	// draw()
 }
 
+/*
 draw :: proc() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -57,6 +58,7 @@ draw :: proc() {
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
 	glfw.SwapBuffers(global.window.window_handle)
 }
+*/
 
 main :: proc() {
 	glfw.SetErrorCallback(error_callback)
@@ -91,7 +93,7 @@ main :: proc() {
 	for !glfw.WindowShouldClose(window.window_handle) {
 		glfw.WaitEvents()
 
-		draw()
+		// draw()
 	}
 }
 
