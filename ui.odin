@@ -4,6 +4,7 @@ import "vendor:glfw"
 
 /*TODO:
  - Use bit_set instead of flags u32 on Widget
+ - Change it so y values in screen space increase as they go higher to match opengl
 */
 
 Rect :: struct { l, r, t, b: int }
@@ -13,6 +14,8 @@ Message :: enum {
 	Layout, // To be sent when a widget has had its size or position changed.
 	Paint,
 }
+
+Color :: [4]f32
 
 //////////////////////////////////////
 //  Callback functions
@@ -137,6 +140,8 @@ window_create :: proc () -> ^Window {
 
 	window.width = 640
 	window.height = 480
+	window.bounds = Rect{l=0, t=0, r=int(window.width), b=int(window.height)}
+	window.clip = window.bounds
 	window.window_handle = glfw.CreateWindow(i32(window.width), i32(window.height), "Window Title", nil, nil)
 	if window.window_handle == nil do panic("EXIT_FAILURE")
 
@@ -191,7 +196,6 @@ _update :: proc() {
 
 @(private="file")
 _window_end_paint :: proc(window: ^Window, painter: ^Painter) {
-	// printf("_window_paint_end\n");
 	glfw.SwapBuffers(global.window.window_handle)
 }
 

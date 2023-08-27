@@ -34,12 +34,12 @@ framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width: i32, he
 	
 	gl.Viewport(0, 0, width, height)
 	
+	global.window.width = int(width)
+	global.window.height = int(height)
 	global.window.bounds = Rect{l=0, t=0, r=int(width), b=int(height)}
 	global.window.clip = global.window.bounds
 	widget_message(global.window, .Layout, 0, nil)
 	_update()
-	
-	// draw()
 }
 
 /*
@@ -102,10 +102,10 @@ setup_quad_vao :: proc() -> u32 {
 				// 		  [2]f32{ 0.5, 0.5, 0 },     [2]f32{ 0.5, -0.5, 0 },   [2]f32{ -0.5, -0.5, 0 } };
 
 	vert_indices := [?]f32 {0, 0,
-							0, 1,
-							1, 1,
-							1, 1,
 							1, 0,
+							1, 1,
+							1, 1,
+							0, 1,
 							0, 0}
 
     vao: u32
@@ -130,9 +130,9 @@ create_quad_shader_program :: proc() -> u32 {
         layout (location = 0) uniform vec4 bounds;
         void main()
         {
-			float x = mix(bounds.x, bounds.z, vert_index.x);
-		    float y = mix(bounds.y, bounds.w, vert_index.y);
-		    gl_Position = vec4(x, y, 0.0, 1.0);
+			float x = mix(bounds[0], bounds[1], vert_index.x);
+		    float y = mix(bounds[2], bounds[3], vert_index.y);
+		    gl_Position = vec4(x, -y, 0.0, 1.0);
         }`
     
     frag_shader_source := `
@@ -158,16 +158,15 @@ create_quad_shader_program :: proc() -> u32 {
 ///////////////////////////////////////////////
 // UI Testing
 ///////////////////////////////////////////////
-widgetB: ^Widget
+widgetB, widgetC, widgetD: ^Widget
 
 central_widget_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
 	bounds := widget.bounds
 
 	switch message {
 	case .Paint:
-		draw_block((^Painter)(dp), bounds, 0xFF77FF)
+		draw_block((^Painter)(dp), bounds, Color{1, 119/255.0, 1, 1})
 	case .Layout:
-		// printf("layout A with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b)
 		widget_move(widgetB, Rect{bounds.l + 20, bounds.r - 20, bounds.t + 20, bounds.b - 20})
 	case .User: printf("User message\n")
 	}
@@ -180,12 +179,36 @@ widgetB_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) 
 
 	switch message {
 	case .Paint:
-		draw_block((^Painter)(dp), bounds, 0xDDDDE0)
+		draw_block((^Painter)(dp), bounds, Color{221/255.0, 221/255.0, 224/255.0, 1})
 	case .Layout:
-		// printf("layout B with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b);
-		
-		// ElementMove(elementC, RectangleMake(bounds.l - 40, bounds.l + 40, bounds.t + 40, bounds.b - 40), false);
-		// ElementMove(elementD, RectangleMake(bounds.r - 40, bounds.r + 40, bounds.t + 40, bounds.b - 40), false);
+		widget_move(widgetC, Rect{bounds.l - 40, bounds.l + 40, bounds.t + 40, bounds.b - 40})
+		widget_move(widgetD, Rect{bounds.r - 40, bounds.r + 40, bounds.t + 40, bounds.b - 40})
+	case .User: printf("User message\n")
+	}
+
+	return 0
+}
+
+widgetC_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
+	bounds := widget.bounds
+
+	switch message {
+	case .Paint:
+		draw_block((^Painter)(dp), bounds, Color{51/255.0, 119/255.0, 1, 1})
+	case .Layout:
+	case .User: printf("User message\n")
+	}
+
+	return 0
+}
+
+widgetD_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) -> int {
+	bounds := widget.bounds
+
+	switch message {
+	case .Paint:
+		draw_block((^Painter)(dp), bounds, Color{51/255.0, 204/255.0, 51/255.0, 1})
+	case .Layout:
 	case .User: printf("User message\n")
 	}
 
@@ -195,4 +218,9 @@ widgetB_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) 
 setup_UI :: proc() {
 	central_widget := widget_create(Widget, global.window, 0, central_widget_message)
 	widgetB = widget_create(Widget, central_widget, 0, widgetB_message)
+	widgetC = widget_create(Widget, widgetB, 0, widgetC_message)
+	widgetD = widget_create(Widget, widgetB, 0, widgetD_message)
+	
+	widget_message(global.window, .Layout, 0, nil) // Do inital window layouting
+	_update()
 }
