@@ -174,7 +174,6 @@ _update :: proc() {
 	if rect_valid(window.update_region) {
 		// Setup the painter using the window's buffer.
 		painter: Painter
-		painter.bits = window.bits
 		painter.width = window.width;
 		painter.height = window.height;
 		painter.clip = rect_intersection(Rect{0, window.width, 0, window.height}, window.update_region)
@@ -192,7 +191,7 @@ _update :: proc() {
 
 @(private="file")
 _window_end_paint :: proc(window: ^Window, painter: ^Painter) {
-	printf("_window_paint_end\n");
+	// printf("_window_paint_end\n");
 }
 
 

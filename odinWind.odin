@@ -10,7 +10,7 @@ import gl "vendor:OpenGL"
 // https://nakst.gitlab.io/tutorial/ui-part-1.html
 
 GL_MAJOR_VERSION :: 4
-GL_MINOR_VERSION :: 0
+GL_MINOR_VERSION :: 3
 
 Global :: struct {
 	window: ^Window,
@@ -46,6 +46,14 @@ draw :: proc() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	gl.BindVertexArray(global.vao)
+	
+	// Left, top, right, bot
+	bounds := [4]f32{0, 0.5, 0.9, 0}
+	gl.Uniform4fv(0, 1, &bounds[0])	
+	
+	color := [4]f32{1, 0, 0, 1}
+	gl.Uniform4fv(1, 1, &color[0])	
+	
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
 	glfw.SwapBuffers(global.window.window_handle)
 }
@@ -73,10 +81,10 @@ main :: proc() {
 	
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 	
-    program := create_shader_program()
+    program := create_quad_shader_program()
     gl.UseProgram(program);
 
-    global.vao = setup_vao();
+    global.vao = setup_quad_vao();
 
 	setup_UI()
 
@@ -87,9 +95,16 @@ main :: proc() {
 	}
 }
 
-setup_vao :: proc() -> u32 {
-    vertices := [?][3]f32{ [3]f32{ -0.5, -0.5, 0.0 }, [3]f32{ -0.5, 0.5, 0.0 }, [3]f32{ 0.5, 0.5, 0.0 }, 
-						  [3]f32{ 0.5, 0.5, 0 },     [3]f32{ 0.5, -0.5, 0 },   [3]f32{ -0.5, -0.5, 0 } };
+setup_quad_vao :: proc() -> u32 {
+    // vert_indices:= [?][2]f32{ [2]f32{ -0.5, -0.5, 0.0 }, [2]f32{ -0.5, 0.5, 0.0 }, [2]f32{ 0.5, 0.5, 0.0 }, 
+				// 		  [2]f32{ 0.5, 0.5, 0 },     [2]f32{ 0.5, -0.5, 0 },   [2]f32{ -0.5, -0.5, 0 } };
+
+	vert_indices := [?]f32 {0, 0,
+							0, 1,
+							1, 1,
+							1, 1,
+							1, 0,
+							0, 0}
 
     vao: u32
     gl.GenVertexArrays(1, &vao)
@@ -98,33 +113,41 @@ setup_vao :: proc() -> u32 {
     vbo: u32
     gl.GenBuffers(1, &vbo)
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-    gl.BufferData(gl.ARRAY_BUFFER, size_of((vertices)), &vertices, gl.STATIC_DRAW)
+    gl.BufferData(gl.ARRAY_BUFFER, size_of((vert_indices)), &vert_indices, gl.STATIC_DRAW)
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0)
+    gl.VertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, 2 * size_of(f32), 0)
     gl.EnableVertexAttribArray(0)
 
     return vao
 }
 
-create_shader_program :: proc() -> u32 {
+create_quad_shader_program :: proc() -> u32 {
     vertex_shader_source := `
-        #version 330 core
-        layout (location = 0) in vec3 aPos;
+        #version 430 core
+        layout (location = 0) in vec2 vert_index;
+        layout (location = 0) uniform vec4 bounds;
         void main()
         {
-        	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+			float x = mix(bounds.x, bounds.z, vert_index.x);
+		    float y = mix(bounds.y, bounds.w, vert_index.y);
+		    gl_Position = vec4(x, y, 0.0, 1.0);
         }`
     
     frag_shader_source := `
-        #version 330 core
+        #version 430 core
+		layout (location = 1) uniform vec4 color;
         out vec4 FragColor;
         
         void main()
         {
-            FragColor = vec4(0.3f, 0.3f, 0.3f, 1.0f);
+            FragColor = color;
         }`
 
 	shader_program, success := gl.load_shaders_source(vertex_shader_source, frag_shader_source)
+
+	if !success {
+		printf("Shader failed to be created.\n")
+	} 
 	
     return shader_program;
 }
