@@ -27,6 +27,7 @@ _window_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) 
 	if message == .Layout && len(widget.children) > 0 {
 		// Move the first child to fill the bounds of the window.
 		widget_move(widget.children[0], widget.bounds)
+		widget_repaint(widget)
 	}
 
 	return 0
@@ -93,7 +94,9 @@ widget_move :: proc(widget: ^Widget, bounds: Rect, alwaysLayout := false) {
 	}
 }
 
-widget_repaint :: proc(widget: ^Widget, region: ^Rect) {
+
+// Marks a widget as needing to be repainted. If region is nil, the region will be the bounds of the widget.
+widget_repaint :: proc(widget: ^Widget, region: ^Rect = nil) {
 	region := region
 	if region == nil {
 		// If the region to repaint was not specified, use the whole bounds of the widget.
@@ -140,7 +143,7 @@ window_create :: proc () -> ^Window {
 	return window
 }
 
-// Recusively sends the Paint message to the widget and its children.
+// Recusively sends the Paint message to the widget and its children. Called by _update.
 @(private="file")
 _widget_paint :: proc(widget: ^Widget, painter: ^Painter) {
 	// Compute the intersection of where the element is allowed to draw, widget->clip,
@@ -164,7 +167,6 @@ _widget_paint :: proc(widget: ^Widget, painter: ^Painter) {
 }
 
 // Sets up a Painter and calls _widget_paint on the window with update_region as the clip rect.
-@(private="file")
 _update :: proc() {
 	window := global.window
 
@@ -177,7 +179,7 @@ _update :: proc() {
 		painter.height = window.height;
 		painter.clip = rect_intersection(Rect{0, window.width, 0, window.height}, window.update_region)
 
-		// Paint everything in the update region.
+		// Send Paint messages to everything in the update region.
 		_widget_paint(&window.widget, &painter);
 
 		// Tell the platform layer to put the result onto the screen.
@@ -243,12 +245,5 @@ rect_contains :: proc(rect: Rect, x, y: int) -> bool {
 // Window only ever has one child with the same width and height as the window.
 
 
-// MyElementMessage() The message handler function for each widget type which handles the new Paint message.
-
-// _ElementPaint() Recurses through child widgets sending them Paint messages
-
-// Rectangle updateRegion; Need to add to Window struct
-
 // ElementRepaint() Called by library user, just sets the updateRegion on Window
 
-// _Update() Gets called at the end of every "frame" (so far just when we get a window resize callback from the OS) and calls _ElementPaint() on the Window with the updateRegion.

@@ -10,6 +10,8 @@ draw_block :: proc(painter: ^Painter, rect: Rect, color: u32) {
 	// Intersect the rectangle we want to fill with the clip, i.e. the rectangle we're allowed to draw into.
 	rect_clipped := rect_intersection(painter.clip, rect)
 
+	// printf("Painting rect: %v\n", rect)
+
 	// For every pixel inside the rectangle...
 	// for y in rect_clipped.t..<rect_clipped.b {
 	// 	for x in rect_clipped.l..<rect_clipped.r {

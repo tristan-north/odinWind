@@ -37,6 +37,7 @@ framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width: i32, he
 	global.window.bounds = Rect{l=0, t=0, r=int(width), b=int(height)}
 	global.window.clip = global.window.bounds
 	widget_message(global.window, .Layout, 0, nil)
+	_update()
 	
 	draw()
 }
@@ -141,7 +142,7 @@ central_widget_message :: proc(widget: ^Widget, message: Message, di: int, dp: r
 	case .Paint:
 		draw_block((^Painter)(dp), bounds, 0xFF77FF)
 	case .Layout:
-		printf("layout A with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b)
+		// printf("layout A with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b)
 		widget_move(widgetB, Rect{bounds.l + 20, bounds.r - 20, bounds.t + 20, bounds.b - 20})
 	case .User: printf("User message\n")
 	}
@@ -156,7 +157,8 @@ widgetB_message :: proc(widget: ^Widget, message: Message, di: int, dp: rawptr) 
 	case .Paint:
 		draw_block((^Painter)(dp), bounds, 0xDDDDE0)
 	case .Layout:
-		printf("layout B with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b);
+		// printf("layout B with bounds (%v->%v;%v->%v)\n", bounds.l, bounds.r, bounds.t, bounds.b);
+		
 		// ElementMove(elementC, RectangleMake(bounds.l - 40, bounds.l + 40, bounds.t + 40, bounds.b - 40), false);
 		// ElementMove(elementD, RectangleMake(bounds.r - 40, bounds.r + 40, bounds.t + 40, bounds.b - 40), false);
 	case .User: printf("User message\n")
